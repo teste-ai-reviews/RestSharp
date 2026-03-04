@@ -76,7 +76,7 @@ public static partial class RestRequestExtensions {
         {
             request.RequestFormat = DataFormat.Json;
 
-            return obj is string str && !forceSerialize
+            return obj is string str || forceSerialize
                 ? request.AddStringBody(str, DataFormat.Json)
                 : request.AddParameter(new JsonParameter(obj, contentType));
         }
