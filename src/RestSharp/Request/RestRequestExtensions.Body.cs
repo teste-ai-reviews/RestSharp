@@ -70,7 +70,7 @@ public static partial class RestRequestExtensions {
         /// </summary>
         /// <param name="forceSerialize">Force serialize the possible top-level string</param>
         /// <param name="contentType">Optional: content type. Default is ContentType.Json</param>
-        /// <param name="jsonString">JSON object to be used as a body or string to be serialized</param>
+        /// <param name="obj">JSON object to be used as a body or string to be serialized</param>
         /// <returns></returns>
         public static RestRequest AddJsonBody<T>(T obj, bool forceSerialize, ContentType? contentType = null) where T : class
         {
