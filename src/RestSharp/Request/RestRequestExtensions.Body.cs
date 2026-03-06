@@ -72,7 +72,7 @@ public static partial class RestRequestExtensions {
         /// <param name="contentType">Optional: content type. Default is ContentType.Json</param>
         /// <param name="obj">JSON object to be used as a body or string to be serialized</param>
         /// <returns></returns>
-        public static RestRequest AddJsonBody<T>(T obj, bool forceSerialize, ContentType? contentType = null) where T : class
+        public RestRequest AddJsonBody<T>(T obj, bool forceSerialize, ContentType? contentType = null) where T : class
         {
             request.RequestFormat = DataFormat.Json;
 
