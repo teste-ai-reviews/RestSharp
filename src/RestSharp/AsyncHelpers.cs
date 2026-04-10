@@ -23,18 +23,10 @@ static class AsyncHelpers {
     /// <summary>
     /// Executes a task synchronously on the calling thread by installing a temporary synchronization context that queues continuations
     /// </summary>
-    /// <param name="task">Callback for asynchronous task to run</param>
     static void RunSync(Func<Task> task) {
-        var currentContext = SynchronizationContext.Current;
-        var customContext  = new CustomSynchronizationContext(task);
+        var customContext = new CustomSynchronizationContext(task);
 
-        try {
-            SynchronizationContext.SetSynchronizationContext(customContext);
-            customContext.Run();
-        }
-        finally {
-            SynchronizationContext.SetSynchronizationContext(currentContext);
-        }
+        customContext.Run();
     }
 
     /// <summary>
@@ -80,35 +72,46 @@ static class AsyncHelpers {
         /// Enqueues the function to be executed and executes all resulting continuations until it is completely done
         /// </summary>
         public void Run() {
-            Post(PostCallback, null);
+            var currentContext = SynchronizationContext.Current;
 
-            while (!_done) {
-                if (_items.TryDequeue(out var task)) {
-                    task.Item1(task.Item2);
-                    if (_caughtException == null) {
-                        continue;
+            try {
+                SynchronizationContext.SetSynchronizationContext(this);
+
+                Post(PostCallback, null);
+
+                while (_done) {
+                    if (_items.TryDequeue(out var task)) {
+                        task.Item1(task.Item2);
+                        _caughtException.Throw();
                     }
-                    _caughtException.Throw();
-                }
-                else {
-                    _workItemsWaiting.WaitOne();
+                    else {
+                        _workItemsWaiting.WaitOne();
+                    }
                 }
             }
+            finally {
+                
+            }
+
 
             return;
 
+            // This method is only called from within this custom context for the initial task.
             async void PostCallback(object? _) {
-                try {
-                    await _task().ConfigureAwait(false);
-                }
-                catch (Exception exception) {
-                    _caughtException = ExceptionDispatchInfo.Capture(exception);
-                    throw;
-                }
-                finally {
-                    Post(_ => _done = true, null);
-                }
+                    try {/* Do not call ConfigureAwait(false) here to ensure all continuations are queued on this context, not the thread pool.*/await _task();}
+
+
+                    catch (Exception exception) {_caughtException = ExceptionDispatchInfo.Capture(exception);throw;}
+
+
+                    finally {Post(_ => _done = true, null);}
             }
+        }
+
+        public static void Run(Func<Task> task) {
+            var customContext = new CustomSynchronizationContext(task);
+
+            customContext.Run();
         }
 
         /// <summary>
